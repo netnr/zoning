@@ -1,12 +1,4 @@
-﻿/*
- * zoning
- * 
- * netnr
- * 2018-08-16
- * 
- * */
-
-var zoning = {
+﻿var zoning = {
     //版本号
     version: "1.0.0",
     //载入js脚本
@@ -33,7 +25,9 @@ var zoning = {
         //起始深度
         deep: 1,
         //最大深度
-        deepmax: 4,
+        //5 村 约46800
+        //4 街道 约3380
+        deepmax: 5,
         //抓取过程信息
         item: {
             //父级编码
@@ -52,13 +46,20 @@ var zoning = {
             case 4:
                 url += item.id.substr(0, 2) + "/";
                 break;
+            case 5:
+                url += item.id.substr(0, 2) + "/" + item.id.substr(2, 2) + "/";
+                break;
         }
         url += item.href + ".html";
+
+        zoning.taskcount += 1;
+
         //fetch 抓取 gb2312
         fetch(url).then(res => res.blob()).then(blob => {
             var reader = new FileReader();
             reader.onload = function () {
                 var list = zoning.matcharray(reader.result, item, deep);
+                zoning.taskcount -= 1;
                 if (list.length > 0 && deep < zoning.config.deepmax) {
                     for (var i = 0; i < list.length; i++) {
                         var li = list[i];
@@ -75,12 +76,13 @@ var zoning = {
             obj.url = url;
             obj.error = e;
             zoning.catchdata.push(obj);
+            zoning.taskcount -= 1;
         });
     },
+    //任务量
+    taskcount: 0,
     //抓取数量
     matchcount: 0,
-    //记录 matchcount 不变次数，当达到指定次数视为抓取完毕（暂时没想到其他的办法判断抓取是否结束）
-    samecount: 0,
     //抓取异常记录
     catchdata: [],
     //抓取结果数据
@@ -88,26 +90,28 @@ var zoning = {
     //匹配抓取内容
     matcharray: function (data, item, deep) {
         var arr = [];
-        //匹配 市辖区 无链接 项
-        data.match(/<td>[0-9]{12}<\/td><td>.*?<\/td>/g, function (x) {
-            var mat = x.split('</td><td>');
-            var obj = {};
-            obj.href = null;
-            obj.id = mat.split('>')[1];
-            obj.text = mat.split('<')[0];
-            arr.push(obj);
-        });
+        if (deep != 5) {
+            //匹配 市辖区 无链接 项
+            data.replace(/<td>[0-9]{12}<\/td><td>.*?<\/td>/g, function (x) {
+                var mat = x.split('</td><td>');
+                var obj = {};
+                obj.href = null;
+                obj.id = mat[0].split('>')[1];
+                obj.text = mat[1].split('<')[0];
+                arr.push(obj);
+            });
+        }
         data = data.replace(/'/g, '"').replace(/<br\/>/g, "");
         //匹配所有的A标签
         var reg = /<a[^>]*href=['"]([^"]*)['"][^>]*>(.*?)<\/a>/g;
         var matchs = data.match(reg);
-        if (!matchs) {
-            return [];
-        }
         var filename = "00";
         switch (deep) {
             //首页
             case 1:
+                if (!matchs) {
+                    return [];
+                }
                 for (var i = 0; i < matchs.length; i++) {
                     var mat = matchs[i];
                     var obj = {};
@@ -120,6 +124,9 @@ var zoning = {
             case 2:
             case 3:
             case 4:
+                if (!matchs) {
+                    return [];
+                }
                 for (var i = 0; i < matchs.length; i++) {
                     var mat = matchs[i];
                     var obj = {};
@@ -129,6 +136,17 @@ var zoning = {
                     obj.text = mat.split('>')[1].split('<')[0];
                     arr.push(obj);
                 }
+                break;
+            case 5:
+                //匹配 村委会 无连接
+                data.replace(/<td>[0-9]{12}<\/td><td>[0-9]{3}<\/td><td>.*?<\/td>/g, function (x) {
+                    var mat = x.split('</td><td>');
+                    var obj = {};
+                    obj.href = null;
+                    obj.id = mat[0].split('>')[1];
+                    obj.text = mat[2].split('<')[0];
+                    arr.push(obj);
+                });
                 break;
         }
         //根据深度 得到文件名（编码）
@@ -141,6 +159,9 @@ var zoning = {
                 break;
             case 4:
                 filename = item.id.substr(0, 6);
+                break;
+            case 5:
+                filename = item.id.substr(0, 9);
                 break;
         }
         zoning.matchdata[filename] = arr;
@@ -160,10 +181,21 @@ var zoning = {
                 var data = {};
                 for (var i in matchdata) {
                     var di = matchdata[i];
-                    data[i] = di;
                     for (var j = 0; j < di.length; j++) {
                         delete di[j].href;
+                        switch (i.length) {
+                            case 2:
+                                di[j].id = di[j].id.substr(0, 4);
+                                break;
+                            case 4:
+                                di[j].id = di[j].id.substr(0, 6);
+                                break;
+                            case 6:
+                                di[j].id = di[j].id.substr(0, 9);
+                                break;
+                        }
                     }
+                    data[i] = di;
                     zip.file(i + ".json", JSON.stringify(di));
                 }
                 zip.file("all.json", JSON.stringify(data));
@@ -180,21 +212,12 @@ var zoning = {
     run: function () {
         zoning.startTime = new Date().valueOf();
         zoning.taskid = setInterval(function () {
-            if (zoning._matchcount == null) {
-                zoning._matchcount = -1;
-            }
-            if (zoning._matchcount == zoning.matchcount) {
-                zoning.samecount += 1;
-            } else {
-                zoning.samecount = 0;
-            }
-            if (zoning.samecount > 10) {
+            console.log("count:" + zoning.matchcount, "taskcount:" + zoning.taskcount);
+            if (zoning.taskcount == 0) {
                 clearInterval(zoning.taskid);
                 zoning.zip();
             }
-            zoning._matchcount = zoning.matchcount;
-            console.log("count:" + zoning.matchcount);
-        }, 1000 * 3);
+        }, 1000 * 4);
         console.log('fetching ... please see the network tab');
         zoning.grab(zoning.config.urlprefix, zoning.config.deep, zoning.config.item);
     }
@@ -205,3 +228,20 @@ zoning.run();
 
 //下载zip，抓取完成后
 //zoning.zip();
+
+/*
+ * 注意：
+ * 
+ * 首次抓取会出现大量失败请求，再次抓取会从浏览器缓存获取，非常快。
+ * 
+ * 文件：
+ * 00.json 根数据
+ * 12.json 二级数据
+ * 1234.json 三级数据
+ * 123456.json 四级数据
+ * 123456789.json 五级数据
+ * 
+ * 其他：
+ * all.json 所有数据
+ * catch.json 抓取异常记录（有异常时，经测试有5个页面请求失败）
+ */
