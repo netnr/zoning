@@ -8,6 +8,10 @@
 > GitHub <https://github.com/netnr/zoning>
 
 ----------
+
+> Demo <https://ss.netnr.com/zoning>
+
+----------
 # 来源
 
  **国家统计局 - 统计用区划和城乡划分代码** 
@@ -33,10 +37,6 @@
 - `dist/zoning-2` 共二级
 - `dist/zoning-3` 共三级
 - `dist/zoning-4` 共四级
-
-----------
-# 示例
-<https://ss.netnr.com/zoning>
 
 ----------
 # 代码
