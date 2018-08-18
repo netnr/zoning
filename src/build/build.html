@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>生成</title>
+</head>
+<body>
+    <p>生成SQLite，请选择 all.json 文件</p>
+    <input type="file" name="name" id="txtFile" />
+
+    <script src="https://lib.baomitu.com/FileSaver.js/2014-11-29/FileSaver.min.js"></script>
+
+    <script>
+        var zoningdb = {
+            worker: new Worker("worker.sql.js"),
+            execute: function (sql) {
+                zoningdb.worker.postMessage({ action: 'exec', sql: sql.join(';') });
+            },
+            change: function (id) {
+                document.getElementById(id).onchange = function () {
+                    var file = this.files[0];
+
+                    if (!file) {
+                        return false;
+                    }
+
+                    var reader = new FileReader();
+                    reader.onload = function () {
+                        console.log('json parse ...');
+
+                        var json = JSON.parse(reader.result);
+
+                        var sql = [];
+                        sql.push("DROP TABLE IF EXISTS zoning");
+                        sql.push("CREATE TABLE zoning(id text, text text, pid text)");
+                        zoningdb.execute(sql);
+
+                        console.log('write db ...');
+
+                        zoningdb.writedb(json, null, 1);
+
+                        console.log('down db ...');
+
+                        zoningdb.downdb();
+                    };
+                    reader.readAsText(file);
+                }
+            },
+            writedb: function (json, id) {
+                id = id || "00";
+                if (id in json) {
+                    var arr = json[id], sql = [], child = [];
+                    for (var i = 0; i < arr.length; i++) {
+                        var item = arr[i];
+                        sql.push("INSERT INTO zoning VALUES ('" + item.id + "','" + item.text + "','" + id + "')")
+                        if (item.id in json) {
+                            child.push(item.id);
+                        }
+                    }
+                    zoningdb.execute(sql);
+
+                    for (var j = 0; j < child.length; j++) {
+                        zoningdb.writedb(json, child[j]);
+                    }
+                }
+            },
+            downdb: function () {
+                zoningdb.defer = setInterval(function () {
+                    console.log('wait ...');
+                }, 1000 * 3);
+                zoningdb.worker.onmessage = function (event) {
+                    var blob = new Blob([event.data.buffer]);
+                    if (blob.size > 1000) {
+                        clearInterval(zoningdb.defer);
+                        saveAs(blob, "zoning.db");
+                    }
+                };
+                zoningdb.worker.postMessage({ action: 'export' });
+            },
+            init: function () {
+                zoningdb.worker.onerror = function (e) {
+                    console.log(e);
+                };
+
+                zoningdb.worker.postMessage({ action: 'open' });
+            }
+        }
+
+        zoningdb.change('txtFile');
+        zoningdb.init();
+
+    </script>
+</body>
+</html>

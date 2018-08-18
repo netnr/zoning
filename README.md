@@ -15,17 +15,20 @@
 ----------
 # 使用
 - 打开页面 <http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2017/index.html>
-- 打开浏览器控制台（推荐谷歌，请不要用IE系列，谢谢）
+- 打开浏览器控制台（推荐Chrome、Firefox，请不要用IE系列，谢谢）
 - 拷贝脚本`zoning.js`的内容粘贴到控制台运行
 
-----------
-# 注意
-首次抓取会出现大量失败请求，再次抓取会从浏览器缓存获取，非常快
+- 首次抓取会出现大量失败请求，再次抓取会从浏览器缓存获取，非常快
+- Chrome比较快，会出现几个链接抓取失败
+- Firefox比较稳定，抓取有保障，内存占用高
 
 ----------
-# 测试
- - Chrome比较快，会出现几个链接抓取失败
- - Firefox比较稳定，抓取有保障，内存高
+# 发布
+- 包含单个`json`文件，`all.json`文件所有数据，`zoning.db`SQLite数据库
+- `dist/zoning` 共五级（全部数据）
+- `dist/zoning-2` 共二级
+- `dist/zoning-3` 共三级
+- `dist/zoning-4` 共四级
 
 ----------
 # 代码
