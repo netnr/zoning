@@ -23,8 +23,22 @@
 首次抓取会出现大量失败请求，再次抓取会从浏览器缓存获取，非常快
 
 ----------
+# 测试
+ - Chrome比较快，会出现几个链接抓取失败
+ - Firefox比较稳定，抓取有保障，内存高
+
+----------
 # 代码
 ```js
+/*
+ * https://github.com/netnr/zoning
+ * 
+ * zoning 1.0.0
+ * 
+ * 2018-08-18
+ * netnr
+ */
+
 var zoning = {
     //版本号
     version: "1.0.0",
@@ -85,27 +99,50 @@ var zoning = {
         fetch(url).then(res => res.blob()).then(blob => {
             var reader = new FileReader();
             reader.onload = function () {
-                var list = zoning.matcharray(reader.result, item, deep);
                 zoning.taskcount -= 1;
-                if (list.length > 0 && deep < zoning.config.deepmax) {
-                    for (var i = 0; i < list.length; i++) {
-                        var li = list[i];
-                        deep += 1;
-                        zoning.grab(urlprefix, deep, li);
-                        deep -= 1;
+                var list = zoning.matcharray(reader.result, item, deep);
+                zoning.taskdefer[item.id] = setInterval(function () {
+                    //终止
+                    if (zoning.stop) {
+                        clearInterval(zoning.taskdefer[item.id]);
+                        return false;
                     }
-                }
+                    //暂停、任务量限制
+                    if (!zoning.pause && zoning.taskcount < 200) {
+                        clearInterval(zoning.taskdefer[item.id]);
+                        if (list.length > 0 && deep < zoning.config.deepmax) {
+                            for (var i = 0; i < list.length; i++) {
+                                var li = list[i];
+                                deep += 1;
+                                zoning.grab(urlprefix, deep, li);
+                                deep -= 1;
+                            }
+                        }
+                    }
+                }, 10);
             }
             reader.readAsText(blob, 'GBK');
         }).catch(function (e) {
             var obj = {};
             obj.item = item;
             obj.url = url;
-            obj.error = e;
+            obj.href = item.href;
+            obj.deep = deep;
+            obj.error = e + "";
             zoning.catchdata.push(obj);
             zoning.taskcount -= 1;
         });
     },
+    //异常记录重新抓取
+    grabcatch: function (catchdata) {
+        for (var i = 0; i < catchdata.length; i++) {
+            var cdi = catchdata[i];
+            cdi.item.href = cdi.href;
+            zoning.grab(zoning.config.urlprefix, cdi.deep, cdi.item);
+        }
+    },
+    //任务延时记录
+    taskdefer: {},
     //任务量
     taskcount: 0,
     //抓取数量
@@ -238,10 +275,10 @@ var zoning = {
     //开始运行
     run: function () {
         zoning.startTime = new Date().valueOf();
-        zoning.taskid = setInterval(function () {
-            console.log("count:" + zoning.matchcount, "taskcount:" + zoning.taskcount);
-            if (zoning.taskcount == 0) {
-                clearInterval(zoning.taskid);
+        zoning.taskdefer.run = setInterval(function () {
+            console.log("count: " + zoning.matchcount + "   taskcount: " + zoning.taskcount);
+            if (!zoning.pause && zoning.taskcount == 0) {
+                clearInterval(zoning.taskdefer.run);
                 zoning.zip();
             }
         }, 1000 * 4);
@@ -270,7 +307,12 @@ zoning.run();
  * 
  * 其他：
  * all.json 所有数据
- * catch.json 抓取异常记录（有异常时，经测试有5个页面请求失败）
+ * catch.json 抓取异常记录（有异常时）
+ * 
+ * 测试：
+ * Chrome比较快，会出现几个链接抓取失败；
+ * Firefox比较稳定，抓取有保障，内存高
+ * 
  */
 ```
 
