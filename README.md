@@ -36,7 +36,7 @@
 /*
  * https://github.com/netnr/zoning
  * 
- * zoning 1.0.0
+ * zoning 1.0.1
  * 
  * 2018-08-18
  * netnr
@@ -44,7 +44,7 @@
 
 var zoning = {
     //版本号
-    version: "1.0.0",
+    version: "1.0.1",
     //载入js脚本
     getScript: function (src, success) {
         var ele = document.createElement("SCRIPT");
@@ -313,8 +313,9 @@ zoning.run();
  * catch.json 抓取异常记录（有异常时）
  * 
  * 测试：
- * Chrome比较快，会出现几个链接抓取失败；
- * Firefox比较稳定，抓取有保障，内存高
+ * 首次抓取会出现大量失败请求，再次抓取会从浏览器缓存获取，非常快
+ * Chrome比较快，会出现几个链接抓取失败
+ * Firefox比较稳定，抓取有保障，内存占用高
  * 
  */
 ```

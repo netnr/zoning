@@ -1,7 +1,7 @@
 ﻿/*
  * https://github.com/netnr/zoning
  * 
- * zoning 1.0.0
+ * zoning 1.0.1
  * 
  * 2018-08-18
  * netnr
@@ -9,7 +9,7 @@
 
 var zoning = {
     //版本号
-    version: "1.0.0",
+    version: "1.0.1",
     //载入js脚本
     getScript: function (src, success) {
         var ele = document.createElement("SCRIPT");
