@@ -28,15 +28,19 @@
 
 - 首次抓取会出现大量失败请求，再次抓取会从浏览器缓存获取，非常快
 - Chrome比较快，会出现几个链接抓取失败
-- Firefox比较稳定，抓取有保障，内存占用高
+- Firefox比较稳定，抓取有保障，内存占用高（推荐，测试版本：61.0.2 64-bit）
+
+- `build`用于导出的`JSON`文件生成`SQLite`和`CSV`
 
 ----------
 # 发布
-- 包含单个`json`文件，`all.json`文件所有数据，`zoning.db`SQLite数据库
-- `dist/zoning` 共五级（全部数据）
-- `dist/zoning-2` 共二级
-- `dist/zoning-3` 共三级
-- `dist/zoning-4` 共四级
+- 支持的格式有：`JSON`文件、`SQLite`数据库、`CSV`文件
+
+- `0.json`根数据， `zoning-*.json`所有数据， `zoning-*.db`SQLite数据库， `zoning-*.csv`CSV文件
+
+- `dist/zoning-5` 五级（全部数据）
+- `dist/zoning-4` 四级
+- `dist/zoning-3` 三级
 
 ----------
 # 代码
@@ -44,15 +48,15 @@
 /*
  * https://github.com/netnr/zoning
  * 
- * zoning 1.0.1
+ * zoning 1.0.0
  * 
- * 2018-08-18
+ * 2018-08-19
  * netnr
  */
 
 var zoning = {
     //版本号
-    version: "1.0.1",
+    version: "1.0.0",
     //载入js脚本
     getScript: function (src, success) {
         var ele = document.createElement("SCRIPT");
@@ -83,7 +87,7 @@ var zoning = {
         //抓取过程信息
         item: {
             //父级编码
-            id: "00",
+            id: "0",
             //请求相对地址
             href: "index"
         }
@@ -180,7 +184,7 @@ var zoning = {
         //匹配所有的A标签
         var reg = /<a[^>]*href=['"]([^"]*)['"][^>]*>(.*?)<\/a>/g;
         var matchs = data.match(reg);
-        var filename = "00";
+        var filename = "0";
         switch (deep) {
             //首页
             case 1:
@@ -253,6 +257,7 @@ var zoning = {
         zoning.getScript(zoning.config.urljszip, function () {
             zoning.getScript(zoning.config.urlfilesaver, function () {
                 var zip = new JSZip();
+
                 var data = {};
                 for (var i in matchdata) {
                     var di = matchdata[i];
@@ -271,14 +276,19 @@ var zoning = {
                         }
                     }
                     data[i] = di;
-                    zip.file(i + ".json", JSON.stringify(di));
+                    if (i.length > 1) {
+                        zip.file(i.substr(0, 2) + "/" + i + ".json", JSON.stringify(di));
+                    }
+                    else {
+                        zip.file(i + ".json", JSON.stringify(di));
+                    }
                 }
-                zip.file("all.json", JSON.stringify(data));
+                zip.file("zoning-" + zoning.config.deepmax + ".json", JSON.stringify(data));
                 if (catchdata.length) {
-                    zip.file('catch.json', JSON.stringify(catchdata));
+                    zip.file("catch-" + zoning.config.deepmax + ".json", JSON.stringify(catchdata));
                 }
                 zip.generateAsync({ type: "blob" }).then(function (content) {
-                    saveAs(content, "zoning.zip");
+                    saveAs(content, "zoning-" + zoning.config.deepmax + ".zip");
                 });
             });
         });
@@ -287,7 +297,7 @@ var zoning = {
     run: function () {
         zoning.startTime = new Date().valueOf();
         zoning.taskdefer.run = setInterval(function () {
-            console.log("count: " + zoning.matchcount + "   taskcount: " + zoning.taskcount);
+            console.log("count: " + zoning.matchcount + "  taskcount: " + zoning.taskcount);
             if (!zoning.pause && zoning.taskcount == 0) {
                 clearInterval(zoning.taskdefer.run);
                 zoning.zip();
@@ -310,20 +320,19 @@ zoning.run();
  * 首次抓取会出现大量失败请求，再次抓取会从浏览器缓存获取，非常快。
  * 
  * 文件：
- * 00.json 根数据
+ * 0.json 根数据
  * 12.json 二级数据
  * 1234.json 三级数据
  * 123456.json 四级数据
  * 123456789.json 五级数据
  * 
  * 其他：
- * all.json 所有数据
- * catch.json 抓取异常记录（有异常时）
+ * zoning-*.json 所有数据，* 代表级数
+ * catch-*.json 抓取异常记录（有异常时）
  * 
  * 测试：
- * 首次抓取会出现大量失败请求，再次抓取会从浏览器缓存获取，非常快
- * Chrome比较快，会出现几个链接抓取失败
- * Firefox比较稳定，抓取有保障，内存占用高
+ * Chrome比较快，会出现几个链接抓取失败；
+ * Firefox比较稳定，抓取有保障，内存高
  * 
  */
 ```
