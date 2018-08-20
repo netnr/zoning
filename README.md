@@ -16,6 +16,8 @@
 
  **国家统计局 - 统计用区划和城乡划分代码** 
 
+ 统计数据截止2017-10-31 于 2018-06-20发布
+
 <http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/>
 
 <http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2017>
