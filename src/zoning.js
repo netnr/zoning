@@ -1,15 +1,13 @@
 ﻿/*
  * https://github.com/netnr/zoning
  * 
- * zoning 1.0.0
- * 
- * 2018-08-19
+ * 2019-01-28
  * netnr
  */
 
 var zoning = {
     //版本号
-    version: "1.0.0",
+    version: "2.0.0",
     //载入js脚本
     getScript: function (src, success) {
         var ele = document.createElement("SCRIPT");
@@ -36,7 +34,7 @@ var zoning = {
         //最大深度
         //5 村 约46800
         //4 街道 约3380
-        deepmax: 5,
+        deepmax: 3,
         //抓取过程信息
         item: {
             //父级编码
@@ -68,7 +66,7 @@ var zoning = {
             var reader = new FileReader();
             reader.onload = function () {
                 zoning.taskcount -= 1;
-                var list = zoning.matcharray(reader.result, item, deep);
+                var list = zoning.matcharray(reader.result, item, deep, url);
                 zoning.taskdefer[item.id] = setInterval(function () {
                     //终止
                     if (zoning.stop) {
@@ -120,82 +118,71 @@ var zoning = {
     //抓取结果数据
     matchdata: {},
     //匹配抓取内容
-    matcharray: function (data, item, deep) {
+    matcharray: function (data, item, deep, url) {
         var arr = [];
-        if (deep != 5) {
-            //匹配 市辖区 无链接 项
-            data.replace(/<td>[0-9]{12}<\/td><td>.*?<\/td>/g, function (x) {
-                var mat = x.split('</td><td>');
-                var obj = {};
-                obj.href = null;
-                obj.id = mat[0].split('>')[1];
-                obj.text = mat[1].split('<')[0];
-                arr.push(obj);
-            });
-        }
+        //替换单引号为双引号、清除br标签
         data = data.replace(/'/g, '"').replace(/<br\/>/g, "");
         //匹配所有的A标签
         var reg = /<a[^>]*href=['"]([^"]*)['"][^>]*>(.*?)<\/a>/g;
-        var matchs = data.match(reg);
-        var filename = "0";
-        switch (deep) {
-            //首页
-            case 1:
-                if (!matchs) {
-                    return [];
+        var matchs = data.match(reg), clen;
+        if (matchs && deep > 1) {
+            //记录当前id最大长度
+            clen = matchs[0].split('.')[0].split('/')[1].length;
+        }
+
+        var currid = [];
+
+        //匹配 最后末级无链接 项
+        data.replace(/<td>[0-9]{12}<\/td><td>[0-9]{3}<\/td><td>.*?<\/td>/g, function (x) {
+            var mat = x.split('</td><td>');
+            var obj = {};
+            obj.href = null;
+            obj.id = mat[0].split('>')[1];
+            obj.text = mat[2].split('<')[0];
+            arr.push(obj);
+            currid.push(obj.id);
+        });
+
+
+        //匹配 市辖区 无链接 项
+        data.replace(/<td>[0-9]{12}<\/td><td>.*?<\/td>/g, function (x) {
+            var mat = x.split('</td><td>');
+            var obj = {};
+            obj.href = null;
+            obj.id = mat[0].split('>')[1];
+            if (clen) {
+                obj.id = obj.id.substr(0, clen);
+            }
+            obj.text = mat[1].split('<')[0];
+            if (currid.indexOf(obj.id) == -1) {
+                arr.push(obj);
+            }
+        });
+
+        //有A标签
+        if (matchs) {
+            for (var i = 0; i < matchs.length; i++) {
+                var mat = matchs[i];
+                var obj = {};
+                obj.href = mat.split('"')[1].split('.')[0];
+                //链接href有斜杠/，即链接有层级，只取最后层
+                var hpre = mat.split('.')[0];
+                if (hpre.indexOf('/') >= 0) {
+                    obj.id = hpre.split('/')[1];
+                } else {
+                    obj.id = hpre.split('"')[1];
                 }
-                for (var i = 0; i < matchs.length; i++) {
-                    var mat = matchs[i];
-                    var obj = {};
-                    obj.id = mat.split('"')[1].split('.')[0];
-                    obj.href = obj.id;
-                    obj.text = mat.split('>')[1].split('<')[0];
-                    arr.push(obj);
-                }
-                break;
-            case 2:
-            case 3:
-            case 4:
-                if (!matchs) {
-                    return [];
-                }
-                for (var i = 0; i < matchs.length; i++) {
-                    var mat = matchs[i];
-                    var obj = {};
-                    obj.href = mat.split('"')[1].split('.')[0];
-                    obj.id = mat.split('>')[1].split('<')[0];
+                if (deep > 1) {
                     mat = matchs[++i];
-                    obj.text = mat.split('>')[1].split('<')[0];
-                    arr.push(obj);
                 }
-                break;
-            case 5:
-                //匹配 村委会 无连接
-                data.replace(/<td>[0-9]{12}<\/td><td>[0-9]{3}<\/td><td>.*?<\/td>/g, function (x) {
-                    var mat = x.split('</td><td>');
-                    var obj = {};
-                    obj.href = null;
-                    obj.id = mat[0].split('>')[1];
-                    obj.text = mat[2].split('<')[0];
-                    arr.push(obj);
-                });
-                break;
+                obj.text = mat.split('>')[1].split('<')[0];
+                arr.push(obj);
+            }
         }
-        //根据深度 得到文件名（编码）
-        switch (deep) {
-            case 2:
-                filename = item.id;
-                break;
-            case 3:
-                filename = item.id.substr(0, 4);
-                break;
-            case 4:
-                filename = item.id.substr(0, 6);
-                break;
-            case 5:
-                filename = item.id.substr(0, 9);
-                break;
-        }
+
+        //得到文件名（编码）
+        var filename = item.id || "0";
+
         zoning.matchdata[filename] = arr;
         //记录请求结果数量
         zoning.matchcount += 1;
@@ -216,17 +203,6 @@ var zoning = {
                     var di = matchdata[i];
                     for (var j = 0; j < di.length; j++) {
                         delete di[j].href;
-                        switch (i.length) {
-                            case 2:
-                                di[j].id = di[j].id.substr(0, 4);
-                                break;
-                            case 4:
-                                di[j].id = di[j].id.substr(0, 6);
-                                break;
-                            case 6:
-                                di[j].id = di[j].id.substr(0, 9);
-                                break;
-                        }
                     }
                     data[i] = di;
                     if (i.length > 1) {
@@ -267,6 +243,21 @@ zoning.run();
 //下载zip，抓取完成后
 //zoning.zip();
 
+//修改抓取层级
+//deepmax:3 | 4 |5
+
+//任务量
+//zoning.taskcount
+
+//抓取数量
+//zoning.matchcount
+
+//抓取异常记录
+//zoning.catchdata
+
+//抓取结果数据
+//zoning.matchdata
+
 /*
  * 注意：
  * 
@@ -285,6 +276,6 @@ zoning.run();
  * 
  * 测试：
  * Chrome比较快，会出现几个链接抓取失败；
- * Firefox比较稳定，抓取有保障，内存高
+ * Firefox比较稳定，抓取有保障，内存占用高（推荐）
  * 
  */
