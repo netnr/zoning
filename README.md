@@ -45,7 +45,7 @@
 - `0.json`根数据
 - `zoning-*.json`所有数据， `zoning-*.db`SQLite数据库， `zoning-*.csv`CSV文件，`zoning-*.sql`SQL脚本
 
-- `dist/zoning-5` 五级（全部数据）
+- `dist/zoning-5` 五级（全部数据，已发布npm，<https://unpkg.com/netnr-zoning/>）
 - `dist/zoning-4` 四级
 - `dist/zoning-3` 三级
 
