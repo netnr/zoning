@@ -25,8 +25,8 @@
 + `build.html`用于导出的`JSON`文件生成`SQLite`和`CSV`
 + `CSV`导出编码为`utf-8`，Excel打开中文会乱码，需要转换编码为`ANSI` 或 `指定BOM`
 
-- [爬取截图1](https://gs.zme.ink/2019/04/26/1345312e2a.jpg) 、
-[爬取截图2](https://gs.zme.ink/2019/04/26/1345311bca.jpg)、[爬取截图3](https://gs.zme.ink/2019/04/26/134531735a.jpg)
+- [爬取截图1](https://static.netnr.com/2019/04/26/1345312e2a.jpg) 、
+[爬取截图2](https://static.netnr.com/2019/04/26/1345311bca.jpg)、[爬取截图3](https://static.netnr.com/2019/04/26/134531735a.jpg)
 
 ### 发布
 - 支持的格式有：`JSON`文件、`SQLite`数据库、`CSV`文件、`SQL`脚本
