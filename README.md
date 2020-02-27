@@ -11,8 +11,8 @@
 
 - **国家统计局 - 统计用区划和城乡划分代码** 
 - <http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/>
-* 统计数据截止2018-10-31 于 2019-01-31发布
-* <http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2018>
+* 统计数据截止2019-10-31 于 2020-02-25发布
+* <http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2019>
 
 ### 使用
 - 打开页面 <http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm>

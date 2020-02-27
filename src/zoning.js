@@ -2,7 +2,7 @@
  * https://github.com/netnr/zoning
  * https://gitee.com/netnr/zoning
  * 
- * 2019-04-26
+ * 2020-02-26
  * netnr
  * 
  * 
@@ -25,7 +25,7 @@
 
 var zoning = {
     //版本号
-    version: "2.0.18",
+    version: "2.0.19",
     //载入js脚本
     getScript: function (src, success) {
         var ele = document.createElement("SCRIPT");
@@ -62,7 +62,20 @@ var zoning = {
         fetch(url).then(res => res.blob()).then(blob => {
             var reader = new FileReader();
             reader.onload = function () {
+                //当没有匹配到信息时尝试
                 var list = zoning.matcharray(reader.result, item, deep, url);
+
+                //记录请求结果数量
+                zoning.matchcount += 1;
+
+                //如果匹配为空
+                if (list.length == 0) {
+                    console.table(["未匹配到信息", url, reader.result]);
+
+                    //写入异常
+                    zoning.catchdata.push({ item, url, path: item.path, deep, error: "未匹配到有效的数据" });
+                }
+
                 //过滤
                 if (zoning.config.fetchcode.length) {
                     var fetchlist = list.filter(x => zoning.config.fetchcode.indexOf(x.id) > -1);
@@ -206,8 +219,7 @@ var zoning = {
         var filename = item.id || "0";
 
         zoning.matchdata[filename] = arr;
-        //记录请求结果数量
-        zoning.matchcount += 1;
+
         return arr;
     },
     //外部调用生成下载
@@ -282,7 +294,7 @@ zoning.config = {
     //fileSaver CDN
     urlfilesaver: "https://lib.baomitu.com/FileSaver.js/2014-11-29/FileSaver.min.js",
     //抓取首页
-    urlprefix: "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2018/",
+    urlprefix: "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2019/",
     //抓取过程信息
     item: {
         //父级编码
@@ -295,7 +307,7 @@ zoning.config = {
     //最大深度, 4 街道 约3380，5 村 约46800
     deepmax: 5,
     //发起时间间隔,单位：毫秒（测试200毫秒稳定）
-    gap: 250,
+    gap: 10,
     //抓指定编码，为空时抓所有
     //如 ["11", "50"] 表示只抓北京市、重庆市
     fetchcode: []

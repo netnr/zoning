@@ -78,6 +78,9 @@
                             child.push(item.id);
                         }
                     }
+                    if (sql.length == 0) {
+                        console.log(id)
+                    }
                     zoningdb.execute(sql);
 
                     for (var j = 0; j < child.length; j++) {
