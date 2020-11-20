@@ -2,7 +2,7 @@
  * https://github.com/netnr/zoning
  * https://gitee.com/netnr/zoning
  * 
- * 2020-02-26
+ * 2020-11-20
  * netnr
  * 
  * 
@@ -17,15 +17,11 @@
  * zoning-*.json 所有数据，* 代表级数
  * catch-*.json 抓取异常记录（有异常时）
  *
- * 测试：
- * Chrome比较快，会出现几个链接抓取失败；
- * Firefox比较稳定，抓取有保障，内存占用高（推荐）
- *
  */
 
 var zoning = {
     //版本号
-    version: "2.0.19",
+    version: "2.0.20",
     //载入js脚本
     getScript: function (src, success) {
         var ele = document.createElement("SCRIPT");
@@ -106,11 +102,21 @@ var zoning = {
         });
     },
     //异常记录重新抓取
-    grabcatch: function (catchdata) {
-        for (var i = 0; i < catchdata.length; i++) {
-            var cdi = catchdata[i];
+    grabcatch: function () {
+        for (var i = 0; i < zoning.catchdata.length; i++) {
+            var cdi = zoning.catchdata[i];
             cdi.item.path = cdi.path;
             zoning.grab(zoning.config.urlprefix, cdi.deep, cdi.item);
+        }
+    },
+    //重新抓取异常后刷新
+    refreshcatch: function () {
+        for (var i = 0; i < zoning.catchdata.length; i++) {
+            var cdi = zoning.catchdata[i];
+            var datakey = cdi.path.split('/').pop();
+            if (datakey in zoning.matchdata) {
+                zoning.catchdata.splice(i, 1)
+            }
         }
     },
     //任务队列
@@ -142,6 +148,58 @@ var zoning = {
                 }
             }, zoning.config.gap);
         }
+    },
+    //外陆（港澳台）
+    outland: function () {
+        //https://apis.map.qq.com/ws/district/v1/list?key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77
+        //text to image 
+
+        zoning.getScript(zoning.config.urltti, function () {
+            fetch('https://img14.360buyimg.com/ddimg/jfs/t1/125681/26/19217/154989/5fb66c5fE20b7c048/fa5a3f63b1179289.png', {
+                responseType: 'blob'
+            }).then(res => {
+                return res.blob();
+            }).then(blob => {
+                var url = URL.createObjectURL(blob);
+                var img = new Image();
+                img.onload = function () {
+                    new tti().asText(img, function (res) {
+                        res = JSON.parse(res);
+
+                        var okey = ["71", "81", "82"], ris0 = [], ris1 = [], ris2 = [];
+
+                        ris0 = res.result[0].filter(x => okey.indexOf((x.id + "").substring(0, 2)) >= 0);
+                        ris0.forEach(x => {
+                            zoning.matchdata["0"].push({ id: (x.id + "").substring(0, 2), text: x.fullname });
+                        });
+                        if (zoning.config.deepmax >= 2) {
+                            ris1 = res.result[1].filter(x => okey.indexOf((x.id + "").substring(0, 2)) >= 0);
+                            ris1.forEach(x => {
+                                var key = (x.id + "").substring(0, 2);
+                                if (!(key in zoning.matchdata)) {
+                                    zoning.matchdata[key] = [];
+                                }
+                                var id = (x.id + "").substring(0, key == "71" ? 4 : 6);
+                                zoning.matchdata[key].push({ id: id, text: x.fullname });
+                            });
+                        }
+                        if (zoning.config.deepmax >= 3) {
+                            ris2 = res.result[2].filter(x => (x.id + "").substring(0, 2) == "71");
+                            ris2.forEach(x => {
+                                var key = (x.id + "").substring(0, 4);
+                                if (!(key in zoning.matchdata)) {
+                                    zoning.matchdata[key] = [];
+                                }
+                                zoning.matchdata[key].push({ id: x.id, text: x.fullname });
+                            });
+                        }
+
+                        URL.revokeObjectURL(url);
+                    })
+                };
+                img.src = url;
+            })
+        });
     },
     //任务延时记录
     taskdefer: {},
@@ -290,11 +348,13 @@ var zoning = {
 //参数配置
 zoning.config = {
     //jszip CDN
-    urljszip: "https://lib.baomitu.com/jszip/3.1.4/jszip.min.js",
+    urljszip: "https://cdn.jsdelivr.net/npm/jszip@3.5.0/dist/jszip.min.js",
     //fileSaver CDN
-    urlfilesaver: "https://lib.baomitu.com/FileSaver.js/2014-11-29/FileSaver.min.js",
+    urlfilesaver: "https://cdn.jsdelivr.net/npm/file-saver@2.0.2/dist/FileSaver.min.js",
+    //text-to-image CDN
+    urltti: "https://cdn.jsdelivr.net/gh/netnr/cdn/libs/text-to-image/20201119/tti.js",
     //抓取首页
-    urlprefix: "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2019/",
+    urlprefix: "http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2020/",
     //抓取过程信息
     item: {
         //父级编码
@@ -304,16 +364,22 @@ zoning.config = {
     },
     //起始深度
     deep: 1,
-    //最大深度, 4 街道 约3380，5 村 约46800
-    deepmax: 5,
+    //最大深度, 4 街道 约3445，5 村 约45289
+    deepmax: 3,
     //发起时间间隔,单位：毫秒（测试200毫秒稳定）
-    gap: 10,
+    gap: 100,
     //抓指定编码，为空时抓所有
     //如 ["11", "50"] 表示只抓北京市、重庆市
     fetchcode: []
 };
 //开始运行
 zoning.run();
+//抓取异常
+//zoning.grabcatch()
+//抓取异常后刷新
+//zoning.refreshcatch()
+//抓取境外（港澳台）
+//zoning.outland()
 
 //下载zip，抓取完成后
 //zoning.zip();
