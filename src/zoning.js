@@ -155,49 +155,37 @@ var zoning = {
         //text to image 
 
         zoning.getScript(zoning.config.urltti, function () {
-            fetch('https://img14.360buyimg.com/ddimg/jfs/t1/125681/26/19217/154989/5fb66c5fE20b7c048/fa5a3f63b1179289.png', {
-                responseType: 'blob'
-            }).then(res => {
-                return res.blob();
-            }).then(blob => {
-                var url = URL.createObjectURL(blob);
-                var img = new Image();
-                img.onload = function () {
-                    new tti().asText(img, function (res) {
-                        res = JSON.parse(res);
+            new tti().asText("https://img14.360buyimg.com/ddimg/jfs/t1/125681/26/19217/154989/5fb66c5fE20b7c048/fa5a3f63b1179289.png", function (res) {
+                res = JSON.parse(res);
+                console.log(res);
 
-                        var okey = ["71", "81", "82"], ris0 = [], ris1 = [], ris2 = [];
+                var okey = ["71", "81", "82"], ris0 = [], ris1 = [], ris2 = [];
 
-                        ris0 = res.result[0].filter(x => okey.indexOf((x.id + "").substring(0, 2)) >= 0);
-                        ris0.forEach(x => {
-                            zoning.matchdata["0"].push({ id: (x.id + "").substring(0, 2), text: x.fullname });
-                        });
-                        if (zoning.config.deepmax >= 2) {
-                            ris1 = res.result[1].filter(x => okey.indexOf((x.id + "").substring(0, 2)) >= 0);
-                            ris1.forEach(x => {
-                                var key = (x.id + "").substring(0, 2);
-                                if (!(key in zoning.matchdata)) {
-                                    zoning.matchdata[key] = [];
-                                }
-                                var id = (x.id + "").substring(0, key == "71" ? 4 : 6);
-                                zoning.matchdata[key].push({ id: id, text: x.fullname });
-                            });
+                ris0 = res.result[0].filter(x => okey.indexOf((x.id + "").substring(0, 2)) >= 0);
+                ris0.forEach(x => {
+                    zoning.matchdata["0"].push({ id: (x.id + "").substring(0, 2), text: x.fullname });
+                });
+                if (zoning.config.deepmax >= 2) {
+                    ris1 = res.result[1].filter(x => okey.indexOf((x.id + "").substring(0, 2)) >= 0);
+                    ris1.forEach(x => {
+                        var key = (x.id + "").substring(0, 2);
+                        if (!(key in zoning.matchdata)) {
+                            zoning.matchdata[key] = [];
                         }
-                        if (zoning.config.deepmax >= 3) {
-                            ris2 = res.result[2].filter(x => (x.id + "").substring(0, 2) == "71");
-                            ris2.forEach(x => {
-                                var key = (x.id + "").substring(0, 4);
-                                if (!(key in zoning.matchdata)) {
-                                    zoning.matchdata[key] = [];
-                                }
-                                zoning.matchdata[key].push({ id: x.id, text: x.fullname });
-                            });
+                        var id = (x.id + "").substring(0, key == "71" ? 4 : 6);
+                        zoning.matchdata[key].push({ id: id, text: x.fullname });
+                    });
+                }
+                if (zoning.config.deepmax >= 3) {
+                    ris2 = res.result[2].filter(x => (x.id + "").substring(0, 2) == "71");
+                    ris2.forEach(x => {
+                        var key = (x.id + "").substring(0, 4);
+                        if (!(key in zoning.matchdata)) {
+                            zoning.matchdata[key] = [];
                         }
-
-                        URL.revokeObjectURL(url);
-                    })
-                };
-                img.src = url;
+                        zoning.matchdata[key].push({ id: x.id, text: x.fullname });
+                    });
+                }
             })
         });
     },
