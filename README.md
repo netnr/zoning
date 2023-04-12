@@ -39,5 +39,6 @@ num | int | 同级排序
 leaf | int | 是叶节点（1：是；2：否）
 deep | int | 爬取深度
 
-> 爬取源码：https://github.com/netnr/np/tree/main/src/Netnr.P/Netnr.Blog.Web/wwwroot/app/spider
-> [联系打赏](https://zme.ink)
+爬取源码：https://github.com/netnr/np/tree/main/src/Netnr.P/Netnr.ClientApp
+
+[联系打赏](https://zme.ink)
