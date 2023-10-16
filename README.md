@@ -6,10 +6,10 @@
 ### [变更日志](CHANGELOG.md)
 
 统计用区划和城乡划分代码  
-<http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/>  
+<http://www.stats.gov.cn/sj/tjbz/qhdm/>  
 
-统计数据截止 2022-10-31 于 2022-12-29 发布  
-<http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2022>
+统计数据截止 2023-06-30 于 2023-09-11 发布  
+<http://www.stats.gov.cn/sj/tjbz/tjyqhdmhcxhfdm/2023/>
 
 共 5 级
 
@@ -39,6 +39,7 @@ num | int | 同级排序
 leaf | int | 是叶节点（1：是；2：否）
 deep | int | 爬取深度
 
-爬取源码：https://github.com/netnr/np/tree/main/src/Netnr.P/Netnr.ClientApp
+爬取源码 (路径可能会失效，但源码始终在该账号的某个项目中)  
+https://github.com/netnr/np/tree/main/src/Netnr.P/Netnr.ClientApp/ClientSpider
 
 [联系打赏](https://zme.ink)
