@@ -1,0 +1,23 @@
+{
+    "name": "zoningjs",
+    "version": "3.2024.0",
+    "description": "中华人民共和国行政区划：省级（省份直辖市自治区）、 地级（城市）、 县级（区县）",
+    "main": "0.json",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/netnr/zoning.git"
+    },
+    "keywords": [
+        "zoning",
+        "china",
+        "region",
+        "city",
+        "区划"
+    ],
+    "author": "netnr",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/netnr/zoning/issues"
+    },
+    "homepage": "https://github.com/netnr/zoning#readme"
+}
