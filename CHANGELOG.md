@@ -1,3 +1,8 @@
+### v3.2025.0
+- 数据截止日期为 2025-12-31
+- ref https://dmfw.mca.gov.cn/XzqhVersionPublish.html
+- 省市区三级 0.json 和 乡镇街道四级 4.json
+
 ### v3.2024.0
 - 2025-04-25 发布 2024 年县以上行政区划代码
 - ref https://www.mca.gov.cn/mzsj/xzqh/2025/202401xzqh.html

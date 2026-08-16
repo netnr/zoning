@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行政区划联动示例</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        display: flex; align-items: flex-start; justify-content: center;
+        gap: 24px; flex-wrap: wrap;
+        padding: 32px 24px; color: #1f2937;
+    }
+    .card {
+        width: 100%; max-width: 560px; flex: 1 1 420px;
+        background: rgba(255, 255, 255, .96);
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+        padding: 28px 32px 24px;
+    }
+    h1 { font-size: 19px; margin-bottom: 4px; }
+    .sub { font-size: 13px; color: #6b7280; margin-bottom: 20px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+    .field label {
+        display: block; font-size: 12px; color: #6b7280;
+        margin-bottom: 6px; letter-spacing: 1px;
+    }
+    select {
+        width: 100%; padding: 10px 12px; font-size: 14px;
+        border: 1px solid #d1d5db; border-radius: 8px;
+        background: #fff; cursor: pointer; outline: none;
+        transition: border-color .15s, box-shadow .15s;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 10px center;
+    }
+    select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, .15); }
+    select:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+    .result {
+        margin-top: 20px; padding: 14px 16px;
+        background: #f8fafc; border: 1px solid #e5e7eb;
+        border-radius: 10px; font-size: 14px; line-height: 1.9;
+    }
+    .result .path { font-weight: 600; color: #111827; }
+    .result .code { font-family: Consolas, monospace; color: #2563eb; }
+    .result .empty { color: #9ca3af; }
+    .status { margin-top: 12px; font-size: 12px; color: #9ca3af; }
+</style>
+</head>
+<body>
+
+<div class="card" id="card3">
+    <h1>三级联动 · 省市区</h1>
+    <div class="sub">数据源 0.json</div>
+    <div class="grid">
+        <div class="field"><label>省 / 直辖市 / 自治区</label><select data-k="p" disabled><option value="">加载中…</option></select></div>
+        <div class="field"><label>城市</label><select data-k="c" disabled><option value="">请选择</option></select></div>
+        <div class="field"><label>区 / 县</label><select data-k="d" disabled><option value="">请选择</option></select></div>
+    </div>
+    <div class="result"><span class="empty">请依次选择省、市、区县</span></div>
+    <div class="status"></div>
+</div>
+
+<div class="card" id="card4">
+    <h1>四级联动 · 省市区 / 乡镇街道</h1>
+    <div class="sub">数据源 4.json（含省市区 + 乡镇街道）</div>
+    <div class="grid">
+        <div class="field"><label>省 / 直辖市 / 自治区</label><select data-k="p" disabled><option value="">加载中…</option></select></div>
+        <div class="field"><label>城市</label><select data-k="c" disabled><option value="">请选择</option></select></div>
+        <div class="field"><label>区 / 县</label><select data-k="d" disabled><option value="">请选择</option></select></div>
+        <div class="field"><label>乡镇 / 街道</label><select data-k="s" disabled><option value="">请选择</option></select></div>
+    </div>
+    <div class="result"><span class="empty">请依次选择省、市、区县、乡镇街道</span></div>
+    <div class="status"></div>
+</div>
+
+<script>
+let data0 = {}; // 0.json：省市区三级
+let data4 = {}; // 4.json：省市区 + 乡镇街道（一个文件包含全部四级）
+
+// 名称 + 括号 code：前三级补足 6 位，第四级补足 9 位
+const labelOf = (x, len) => `${x.n}（${String(x.c).padEnd(len, "0")}）`;
+
+// levels: 层级键序列；src: 数据源对象（三级组用 data0，四级组用 data4）
+function createCascade(cardEl, levels, src, hasStreet) {
+    let picked = {};
+    const sels = {};
+    cardEl.querySelectorAll("select").forEach(s => sels[s.dataset.k] = s);
+    const resultEl = cardEl.querySelector(".result");
+    // 一级 2 位、二级 4 位、三级 6 位、四级 9 位
+    const codeLen = k => ({ p: 2, c: 4, d: 6, s: 9 })[k] || 6;
+
+    function fill(sel, list, placeholder, len) {
+        sel.innerHTML = "";
+        sel.add(new Option(placeholder, ""));
+        (list || []).forEach(x => sel.add(new Option(labelOf(x, len), x.c)));
+        sel.disabled = !list || !list.length;
+    }
+    function resetFrom(level) {
+        let start = levels.indexOf(level);
+        for (let i = start; i < levels.length; i++) {
+            delete picked[levels[i]];
+            fill(sels[levels[i]], null, "请选择", codeLen(levels[i]));
+        }
+    }
+    function render() {
+        let names = [], codes = [];
+        levels.forEach(k => { if (picked[k]) { names.push(picked[k].n); codes.push(picked[k].c); } });
+        if (!names.length) {
+            resultEl.innerHTML = `<span class="empty">请依次选择${hasStreet ? "省、市、区县、乡镇街道" : "省、市、区县"}</span>`;
+            return;
+        }
+        // 结果区显示标准行政区划代码：三级以内补 6 位，第四级补 9 位
+        let code = String(codes[codes.length - 1]).padEnd(hasStreet ? 9 : 6, "0");
+        resultEl.innerHTML = `<div class="path">${names.join(" / ")}</div><div>行政区划代码：<span class="code">${code}</span></div>`;
+    }
+
+    sels.p.addEventListener("change", () => {
+        let v = sels.p.value;
+        picked.p = v ? src["0"].find(x => x.c == v) : null;
+        if (picked.p) fill(sels.c, src[v], "请选择", 4);
+        resetFrom(picked.p ? "d" : "c");
+        render();
+    });
+    sels.c.addEventListener("change", () => {
+        let v = sels.c.value;
+        picked.c = v ? (src[picked.p.c] || []).find(x => x.c == v) : null;
+        if (picked.c) fill(sels.d, src[v], "请选择", 6);
+        delete picked.d;
+        if (hasStreet) {
+            delete picked.s;
+            fill(sels.s, null, "请选择", 9);
+        }
+        render();
+    });
+    sels.d.addEventListener("change", () => {
+        let v = sels.d.value;
+        picked.d = v ? (src[picked.c.c] || []).find(x => x.c == v) : null;
+        if (hasStreet) {
+            delete picked.s;
+            fill(sels.s, picked.d ? src[v] : null, picked.d ? (src[v] ? "请选择" : "（无四级数据）") : "请选择", 9);
+        }
+        render();
+    });
+    if (hasStreet) {
+        sels.s.addEventListener("change", () => {
+            let v = sels.s.value;
+            picked.s = v ? (src[picked.d.c] || []).find(x => x.c == v) : null;
+            render();
+        });
+    }
+    return {
+        ready() { fill(sels.p, src["0"], "请选择", 2); },
+        setStatus(t) { cardEl.querySelector(".status").textContent = t; },
+    };
+}
+
+(async function init() {
+    let g3 = createCascade(document.getElementById("card3"), ["p", "c", "d"], data0, false);
+    let g4 = createCascade(document.getElementById("card4"), ["p", "c", "d", "s"], data4, true);
+    g3.setStatus("正在加载 0.json …");
+    g4.setStatus("正在加载 4.json …");
+    try {
+        let [r0, r4] = await Promise.all([fetch("./0.json"), fetch("./4.json")]);
+        Object.assign(data0, await r0.json());
+        Object.assign(data4, await r4.json());
+        g3.ready();
+        g4.ready();
+        let n0 = Object.values(data0).reduce((s, l) => s + l.length, 0);
+        let n4 = Object.entries(data4)
+            .filter(([k]) => k.length === 6)
+            .reduce((s, [, l]) => s + l.length, 0);
+        g3.setStatus(`数据加载完成：省市区 ${n0} 条（0.json）`);
+        g4.setStatus(`数据加载完成：乡镇街道 ${n4} 条（4.json 含省市区）`);
+    } catch (e) {
+        let msg = "数据加载失败，请通过本地 HTTP 服务访问本页面（如 npx serve 或 python -m http.server），不能用 file:// 直接打开";
+        g3.setStatus(msg);
+        g4.setStatus(msg);
+        console.error(e);
+    }
+})();
+</script>
+</body>
+</html>
